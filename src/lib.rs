@@ -16,8 +16,6 @@ mod rpc;
 mod service;
 mod types;
 
-pub use config::gossip_max_size;
-
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use std::str::FromStr;
 
@@ -62,31 +60,20 @@ impl<'de> Deserialize<'de> for PeerIdSerialized {
     }
 }
 
-pub use crate::types::{
-    error, BeaconBlock, Enr, EnrSyncCommitteeBitfield, EthSpec, ExecutionPayload, FullPayload,
-    GossipKind, GossipTopic, MainnetEthSpec, NetworkGlobals, PubsubMessage, SignedBeaconBlock,
-    Subnet, SubnetDiscovery,
-};
+use crate::types::{error, Enr, EnrSyncCommitteeBitfield, NetworkGlobals, Subnet, SubnetDiscovery};
+use config::Config as NetworkConfig;
+use discovery::{CombinedKeyExt, EnrExt, Eth2Enr};
+use libp2p::gossipsub::TopicHash;
+use libp2p::PeerId;
+use libp2p::{multiaddr, Multiaddr};
+use network::api_types::{Request, Response};
+use network::utils::*;
+use network::{Gossipsub, Network, NetworkEvent};
+use peer_manager::peerdb::client::Client;
 
-pub use prometheus_client;
-
-pub use config::Config as NetworkConfig;
-pub use discovery::{CombinedKeyExt, EnrExt, Eth2Enr};
-pub use discv5;
-pub use libp2p;
-pub use libp2p::bandwidth::BandwidthSinks;
-pub use libp2p::gossipsub::{IdentTopic, MessageAcceptance, MessageId, Topic, TopicHash};
-pub use libp2p::{core::ConnectedPoint, PeerId, Swarm};
-pub use libp2p::{multiaddr, Multiaddr};
-pub use metrics::scrape_discovery_metrics;
-pub use peer_manager::{
-    peerdb::client::Client,
-    peerdb::score::{PeerAction, ReportSource},
-    peerdb::PeerDB,
-    ConnectionDirection, PeerConnectionStatus, PeerInfo, PeerManager, SyncInfo, SyncStatus,
+pub use crate::types::{GossipKind, GossipTopic, PubsubMessage};
+pub use ::types::{
+    BeaconBlock, BitVector, EthSpec, ExecutionPayload, FullPayload, MainnetEthSpec,
+    SignedBeaconBlock,
 };
-// pub use service::{load_private_key, Context, Libp2pEvent, Service, NETWORK_KEY_FILENAME};
-pub use network::api_types::{PeerRequestId, Request, Response};
-pub use network::utils::*;
-pub use network::{Gossipsub, Network, NetworkEvent};
 pub use service::{Service, ServiceConfig, ServiceHandle};
