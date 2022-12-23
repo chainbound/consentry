@@ -5,7 +5,9 @@ mod subnet;
 mod sync_state;
 mod topics;
 
-pub use types::{BeaconBlock, BitVector, EthSpec, ExecutionPayload, SignedBeaconBlock};
+pub use types::{
+    BeaconBlock, BitVector, EthSpec, ExecutionPayload, MainnetEthSpec, SignedBeaconBlock,
+};
 
 pub type EnrAttestationBitfield<T> = BitVector<<T as EthSpec>::SubnetBitfieldLength>;
 pub type EnrSyncCommitteeBitfield<T> = BitVector<<T as EthSpec>::SyncCommitteeSubnetCount>;
