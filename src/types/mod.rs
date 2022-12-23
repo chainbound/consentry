@@ -6,7 +6,8 @@ mod sync_state;
 mod topics;
 
 pub use types::{
-    BeaconBlock, BitVector, EthSpec, ExecutionPayload, MainnetEthSpec, SignedBeaconBlock,
+    BeaconBlock, BitVector, EthSpec, ExecutionPayload, FullPayload, MainnetEthSpec,
+    SignedBeaconBlock,
 };
 
 pub type EnrAttestationBitfield<T> = BitVector<<T as EthSpec>::SubnetBitfieldLength>;

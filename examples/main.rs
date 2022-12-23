@@ -22,6 +22,14 @@ async fn main() {
     while let Some(event) = events.next().await {
         if let PubsubMessage::BeaconBlock(block) = event {
             info!(slot = %block.slot(), hash = ?block.canonical_root(), "Received block");
+            println!(
+                "Received block: {:?}",
+                block
+                    .message()
+                    .execution_payload()
+                    .unwrap()
+                    .execution_payload
+            )
         }
 
         info!("Peer count: {}", handle.peer_count().await);
