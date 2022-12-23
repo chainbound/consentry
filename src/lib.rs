@@ -4,6 +4,7 @@
 /// This crate builds and manages the libp2p services required by the beacon node.
 #[macro_use]
 extern crate lazy_static;
+extern crate types as consensus_types;
 
 mod config;
 pub mod network;
@@ -72,7 +73,7 @@ use network::{Gossipsub, Network, NetworkEvent};
 use peer_manager::peerdb::client::Client;
 
 pub use crate::types::{GossipKind, GossipTopic, PubsubMessage};
-pub use ::types::{
+pub use consensus_types::{
     BeaconBlock, BitVector, EthSpec, ExecutionPayload, FullPayload, MainnetEthSpec,
     SignedBeaconBlock,
 };
