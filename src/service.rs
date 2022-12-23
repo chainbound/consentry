@@ -21,10 +21,10 @@ use crate::{NetworkConfig, NetworkEvent};
 
 #[derive(Debug, Clone)]
 pub struct ServiceConfig {
-    boot_enrs: Vec<Enr>,
-    libp2p_port: u16,
-    discovery_port: u16,
-    max_peers: usize,
+    pub boot_enrs: Vec<Enr>,
+    pub libp2p_port: u16,
+    pub discovery_port: u16,
+    pub max_peers: usize,
 }
 
 impl Default for ServiceConfig {
