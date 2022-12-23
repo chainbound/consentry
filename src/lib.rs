@@ -6,14 +6,15 @@
 extern crate lazy_static;
 
 mod config;
-pub mod service;
+pub mod network;
 
 #[allow(clippy::mutable_key_type)] // PeerId in hashmaps are no longer permitted by clippy
-pub mod discovery;
-pub mod metrics;
-pub mod peer_manager;
-pub mod rpc;
-pub mod types;
+mod discovery;
+mod metrics;
+mod peer_manager;
+mod rpc;
+mod service;
+mod types;
 
 pub use config::gossip_max_size;
 
@@ -62,8 +63,8 @@ impl<'de> Deserialize<'de> for PeerIdSerialized {
 }
 
 pub use crate::types::{
-    error, Enr, EnrSyncCommitteeBitfield, GossipTopic, NetworkGlobals, PubsubMessage, Subnet,
-    SubnetDiscovery,
+    error, Enr, EnrSyncCommitteeBitfield, GossipKind, GossipTopic, NetworkGlobals, PubsubMessage,
+    Subnet, SubnetDiscovery,
 };
 
 pub use prometheus_client;
@@ -84,6 +85,7 @@ pub use peer_manager::{
     ConnectionDirection, PeerConnectionStatus, PeerInfo, PeerManager, SyncInfo, SyncStatus,
 };
 // pub use service::{load_private_key, Context, Libp2pEvent, Service, NETWORK_KEY_FILENAME};
-pub use service::api_types::{PeerRequestId, Request, Response};
-pub use service::utils::*;
-pub use service::{Gossipsub, NetworkEvent};
+pub use network::api_types::{PeerRequestId, Request, Response};
+pub use network::utils::*;
+pub use network::{Gossipsub, Network, NetworkEvent};
+pub use service::{Service, ServiceConfig, ServiceHandle};

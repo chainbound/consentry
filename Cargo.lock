@@ -501,6 +501,7 @@ dependencies = [
  "tiny-keccak",
  "tokio",
  "tokio-io-timeout",
+ "tokio-stream",
  "tokio-util",
  "tracing",
  "tracing-subscriber 0.2.25",

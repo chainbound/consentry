@@ -1,7 +1,7 @@
 //! Implementation of Lighthouse's peer management system.
 
+use crate::network::TARGET_SUBNET_PEERS;
 use crate::rpc::{GoodbyeReason, MetaData, Protocol, RPCError, RPCResponseErrorCode};
-use crate::service::TARGET_SUBNET_PEERS;
 use crate::{error, metrics, Gossipsub};
 use crate::{NetworkGlobals, PeerId};
 use crate::{Subnet, SubnetDiscovery};
@@ -1221,20 +1221,7 @@ enum ConnectingType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use slog::{o, Drain};
     use types::MainnetEthSpec as E;
-
-    pub fn build_log(level: slog::Level, enabled: bool) -> slog::Logger {
-        let decorator = slog_term::TermDecorator::new().build();
-        let drain = slog_term::FullFormat::new(decorator).build().fuse();
-        let drain = slog_async::Async::new(drain).build().fuse();
-
-        if enabled {
-            slog::Logger::root(drain.filter_level(level).fuse(), o!())
-        } else {
-            slog::Logger::root(drain.filter(|_| false).fuse(), o!())
-        }
-    }
 
     async fn build_peer_manager(target_peer_count: usize) -> PeerManager<E> {
         let config = config::Config {
@@ -1242,8 +1229,7 @@ mod tests {
             discovery_enabled: false,
             ..Default::default()
         };
-        let log = build_log(slog::Level::Debug, false);
-        let globals = NetworkGlobals::new_test_globals(&log);
+        let globals = NetworkGlobals::new_test_globals();
         PeerManager::new(config, Arc::new(globals)).unwrap()
     }
 

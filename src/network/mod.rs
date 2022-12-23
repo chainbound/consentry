@@ -2,13 +2,13 @@ use crate::config::{gossipsub_config, NetworkLoad};
 use crate::discovery::{
     subnet_predicate, DiscoveredPeers, Discovery, FIND_NODE_QUERY_CLOSEST_PEERS,
 };
+use crate::network::behaviour::BehaviourEvent;
+pub use crate::network::behaviour::Gossipsub;
 use crate::peer_manager::{
     config::Config as PeerManagerCfg, peerdb::score::PeerAction, peerdb::score::ReportSource,
     ConnectionDirection, PeerManager, PeerManagerEvent,
 };
 use crate::peer_manager::{MIN_OUTBOUND_ONLY_FACTOR, PEER_EXCESS_FACTOR, PRIORITY_PEER_EXCESS};
-use crate::service::behaviour::BehaviourEvent;
-pub use crate::service::behaviour::Gossipsub;
 use crate::types::{
     subnet_from_topic_hash, GossipEncoding, GossipKind, GossipTopic, SnappyTransform, Subnet,
     SubnetDiscovery,

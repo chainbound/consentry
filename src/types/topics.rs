@@ -19,15 +19,6 @@ pub const ATTESTER_SLASHING_TOPIC: &str = "attester_slashing";
 pub const SIGNED_CONTRIBUTION_AND_PROOF_TOPIC: &str = "sync_committee_contribution_and_proof";
 pub const SYNC_COMMITTEE_PREFIX_TOPIC: &str = "sync_committee_";
 
-pub const CORE_TOPICS: [GossipKind; 6] = [
-    GossipKind::BeaconBlock,
-    GossipKind::BeaconAggregateAndProof,
-    GossipKind::VoluntaryExit,
-    GossipKind::ProposerSlashing,
-    GossipKind::AttesterSlashing,
-    GossipKind::SignedContributionAndProof,
-];
-
 /// A gossipsub topic which encapsulates the type of messages that should be sent and received over
 /// the pubsub protocol and the way the messages should be encoded.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]

@@ -8,13 +8,10 @@ pub mod enr_ext;
 
 // Allow external use of the lighthouse ENR builder
 use crate::metrics;
-use crate::service::TARGET_SUBNET_PEERS;
+use crate::network::TARGET_SUBNET_PEERS;
 use crate::{error, Enr, NetworkConfig, NetworkGlobals, Subnet, SubnetDiscovery};
 use discv5::{enr::NodeId, Discv5, Discv5Event};
-pub use enr::{
-    build_enr, create_enr_builder_from_config, load_enr_from_disk, use_or_load_enr, CombinedKey,
-    Eth2Enr,
-};
+pub use enr::{build_enr, create_enr_builder_from_config, use_or_load_enr, CombinedKey, Eth2Enr};
 pub use enr_ext::{peer_id_to_node_id, CombinedKeyExt, EnrExt};
 pub use libp2p::core::identity::{Keypair, PublicKey};
 
@@ -1064,23 +1061,10 @@ mod tests {
     use super::*;
     use crate::rpc::methods::{MetaData, MetaDataV2};
     use enr::EnrBuilder;
-    use slog::{o, Drain};
     use types::{BitVector, MinimalEthSpec, SubnetId};
     use unused_port::unused_udp_port;
 
     type E = MinimalEthSpec;
-
-    pub fn build_log(level: slog::Level, enabled: bool) -> slog::Logger {
-        let decorator = slog_term::TermDecorator::new().build();
-        let drain = slog_term::FullFormat::new(decorator).build().fuse();
-        let drain = slog_async::Async::new(drain).build().fuse();
-
-        if enabled {
-            slog::Logger::root(drain.filter_level(level).fuse(), o!())
-        } else {
-            slog::Logger::root(drain.filter(|_| false).fuse(), o!())
-        }
-    }
 
     async fn build_discovery() -> Discovery<E> {
         let keypair = libp2p::identity::Keypair::generate_secp256k1();
@@ -1090,7 +1074,6 @@ mod tests {
         };
         let enr_key: CombinedKey = CombinedKey::from_libp2p(&keypair).unwrap();
         let enr: Enr = build_enr::<E>(&enr_key, &config, &EnrForkId::default()).unwrap();
-        let log = build_log(slog::Level::Debug, false);
         let globals = NetworkGlobals::new(
             enr,
             9000,

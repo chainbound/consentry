@@ -1,5 +1,5 @@
 #![cfg(test)]
-use consentry::service::Network as LibP2PService;
+use consentry::network::Network as LibP2PService;
 use consentry::Enr;
 use consentry::EnrExt;
 use consentry::Multiaddr;
