@@ -8,7 +8,7 @@ use ssz::{Decode, Encode};
 use std::boxed::Box;
 use std::io::{Error, ErrorKind};
 use std::sync::Arc;
-use types::{
+pub use types::{
     Attestation, AttesterSlashing, EthSpec, ForkContext, ForkName, ProposerSlashing,
     SignedAggregateAndProof, SignedBeaconBlock, SignedBeaconBlockAltair, SignedBeaconBlockBase,
     SignedBeaconBlockMerge, SignedContributionAndProof, SignedVoluntaryExit, SubnetId,

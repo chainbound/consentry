@@ -63,8 +63,8 @@ impl<'de> Deserialize<'de> for PeerIdSerialized {
 }
 
 pub use crate::types::{
-    error, Enr, EnrSyncCommitteeBitfield, GossipKind, GossipTopic, NetworkGlobals, PubsubMessage,
-    Subnet, SubnetDiscovery,
+    error, BeaconBlock, Enr, EnrSyncCommitteeBitfield, ExecutionPayload, GossipKind, GossipTopic,
+    NetworkGlobals, PubsubMessage, SignedBeaconBlock, Subnet, SubnetDiscovery,
 };
 
 pub use prometheus_client;
