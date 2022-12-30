@@ -226,7 +226,6 @@ impl Service {
                                 } else {
                                     None
                                 };
-                                println!("Received message from peer: {:?}, {:?}", source, remote_addr);
 
                                 // Ignore errors if the receiver has been dropped
                                 let _ = tx.send(SentryMessage { peer_id: source, remote_addr, message });
