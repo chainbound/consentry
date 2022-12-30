@@ -20,15 +20,18 @@ async fn main() {
     tokio::task::spawn(svc.start());
 
     while let Some(event) = events.next().await {
-        if let PubsubMessage::BeaconBlock(block) = event {
+        if let PubsubMessage::BeaconBlock(block) = event.message {
             info!(slot = %block.slot(), hash = ?block.canonical_root(), "Received block");
+            let block_number = block
+                .message()
+                .execution_payload()
+                .unwrap()
+                .execution_payload
+                .block_number;
+
             println!(
-                "Received block: {:?}",
-                block
-                    .message()
-                    .execution_payload()
-                    .unwrap()
-                    .execution_payload
+                "Received block {} (source peer: {:?}",
+                block_number, event.peer_id
             )
         }
 

@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::net::SocketAddr;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -23,6 +24,7 @@ use crate::{NetworkConfig, NetworkEvent};
 #[derive(Debug, Clone)]
 pub struct SentryMessage {
     pub peer_id: PeerId,
+    pub remote_addr: Option<SocketAddr>,
     pub message: PubsubMessage<MainnetEthSpec>,
 }
 
@@ -100,7 +102,7 @@ impl Service {
         UnboundedReceiverStream::new(rx)
     }
 
-    pub async fn start(mut self) {
+    pub async fn start(mut self) -> ! {
         // Create the inner `NetworkConfig`
         let network_config = NetworkConfig {
             libp2p_port: self.cfg.libp2p_port,
@@ -219,8 +221,15 @@ impl Service {
                             }
 
                             if let Some(tx) = &self.events_tx {
+                                let remote_addr = if let Some(info) = globals.peers.read().peer_info(&source) {
+                                    info.seen_addresses().cloned().next()
+                                } else {
+                                    None
+                                };
+                                println!("Received message from peer: {:?}, {:?}", source, remote_addr);
+
                                 // Ignore errors if the receiver has been dropped
-                                let _ = tx.send(SentryMessage { peer_id: source, message });
+                                let _ = tx.send(SentryMessage { peer_id: source, remote_addr, message });
                             }
                         }
                         NetworkEvent::RequestReceived {
