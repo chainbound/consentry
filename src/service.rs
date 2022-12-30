@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use libp2p::PeerId;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::{mpsc, oneshot};
 use tokio_stream::wrappers::UnboundedReceiverStream;
@@ -18,6 +19,12 @@ use crate::types::GossipKind;
 use crate::{Context, PubsubMessage, Request, Response};
 use crate::{Enr, Network};
 use crate::{NetworkConfig, NetworkEvent};
+
+#[derive(Debug, Clone)]
+pub struct SentryMessage {
+    pub peer_id: PeerId,
+    pub message: PubsubMessage<MainnetEthSpec>,
+}
 
 #[derive(Debug, Clone)]
 pub struct ServiceConfig {
@@ -65,7 +72,7 @@ impl ServiceHandle {
 pub struct Service {
     cfg: ServiceConfig,
     cmd_rx: UnboundedReceiver<ServiceCommand>,
-    events_tx: Option<UnboundedSender<PubsubMessage<MainnetEthSpec>>>,
+    events_tx: Option<UnboundedSender<SentryMessage>>,
     handle: ServiceHandle,
 }
 
@@ -87,9 +94,7 @@ impl Service {
 
     /// Returns a stream of [`PubsubMessage`] events. Note that this will only return events
     /// to which we've subscribed via the [`ServiceHandle`].
-    pub fn pubsub_event_stream(
-        &mut self,
-    ) -> UnboundedReceiverStream<PubsubMessage<MainnetEthSpec>> {
+    pub fn pubsub_event_stream(&mut self) -> UnboundedReceiverStream<SentryMessage> {
         let (tx, rx) = mpsc::unbounded_channel();
         self.events_tx = Some(tx);
         UnboundedReceiverStream::new(rx)
@@ -186,7 +191,7 @@ impl Service {
                         NetworkEvent::PeerDisconnected(id) => {
                             debug!(peer = ?id, "Peer disconnected");
                         }
-                        NetworkEvent::PubsubMessage { message, .. } => {
+                        NetworkEvent::PubsubMessage { message, source, .. } => {
                             if let PubsubMessage::BeaconBlock(ref block) = message {
                                 let slot = block.slot();
                                 let root = block.canonical_root();
@@ -215,7 +220,7 @@ impl Service {
 
                             if let Some(tx) = &self.events_tx {
                                 // Ignore errors if the receiver has been dropped
-                                let _ = tx.send(message);
+                                let _ = tx.send(SentryMessage { peer_id: source, message });
                             }
                         }
                         NetworkEvent::RequestReceived {

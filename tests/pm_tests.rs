@@ -1,6 +1,7 @@
 #![cfg(not(debug_assertions))]
 
 mod common;
+use consentry::ExecutionPayload;
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
