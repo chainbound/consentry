@@ -109,17 +109,17 @@ impl Service {
             discovery_port: self.cfg.discovery_port,
             boot_nodes_enr: self.cfg.boot_enrs,
             target_peers: self.cfg.max_peers,
+            network_load: 5,
             ..Default::default()
         };
 
         // Specify the fork
-        let fork = ForkName::Merge;
+        let fork = ForkName::Capella;
 
         // Populate the chain spec
         let mainnet_spec = ChainSpec::mainnet();
 
-        // Get the merge slot
-        let merge_slot = mainnet_spec
+        let capella_slot = mainnet_spec
             .fork_epoch(fork)
             .unwrap()
             .start_slot(MainnetEthSpec::slots_per_epoch());
@@ -130,15 +130,21 @@ impl Service {
                 .unwrap();
 
         // Build the merge fork context
-        let merge_fork_context =
-            ForkContext::new::<MainnetEthSpec>(merge_slot, genesis_validators_root, &mainnet_spec);
+        let capella_fork_context = ForkContext::new::<MainnetEthSpec>(
+            capella_slot,
+            genesis_validators_root,
+            &mainnet_spec,
+        );
+
+        let fork_digest = capella_fork_context.to_context_bytes(fork).unwrap();
+        info!(slot = ?capella_slot, "Fork digest: {:?}", fork_digest);
 
         // Build the network service context
         let ctx = Context {
             config: &network_config,
             enr_fork_id: mainnet_spec
-                .enr_fork_id::<MainnetEthSpec>(merge_slot, genesis_validators_root),
-            fork_context: Arc::new(merge_fork_context),
+                .enr_fork_id::<MainnetEthSpec>(capella_slot, genesis_validators_root),
+            fork_context: Arc::new(capella_fork_context),
             chain_spec: &mainnet_spec,
             gossipsub_registry: None,
         };
@@ -147,17 +153,17 @@ impl Service {
 
         // Set a random default status (for now)
         let mut highest_status = StatusMessage {
-            fork_digest: [74, 38, 197, 139],
+            fork_digest,
             finalized_root: Hash256::from_str(
-                "0x6e1fbcfc857c0f849e4570009422edf1d56e29b16098b632fa8bee1b7e7f353c",
+                "0xb6adca904a0674b7263f8f9518b2a0dff5ee6089ee92890e742d0a64a2cbbb43",
             )
             .unwrap(),
-            finalized_epoch: Epoch::new(169022),
+            finalized_epoch: Epoch::new(194863),
             head_root: Hash256::from_str(
-                "0xf4cc483036e8ec382ccc85639695b0bb12ed11e9c8af2daf5b0c5340b015ca4e",
+                "0xb41d25d17ef959d15aabdc01df99e2ec94dd600a0ac218d5b79b2a95cb14acad",
             )
             .unwrap(),
-            head_slot: Slot::new(5408793),
+            head_slot: Slot::new(6235698),
         };
 
         let mut epoch_blocks: VecDeque<(Slot, Hash256)> = VecDeque::with_capacity(3);

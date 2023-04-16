@@ -165,11 +165,3 @@ pub fn check_nat() {
         inc_counter(&NAT_OPEN);
     }
 }
-
-pub fn scrape_discovery_metrics() {
-    let metrics = discv5::metrics::Metrics::from(discv5::Discv5::raw_metrics());
-    set_float_gauge(&DISCOVERY_REQS, metrics.unsolicited_requests_per_second);
-    set_gauge(&DISCOVERY_SESSIONS, metrics.active_sessions as i64);
-    set_gauge(&DISCOVERY_SENT_BYTES, metrics.bytes_sent as i64);
-    set_gauge(&DISCOVERY_RECV_BYTES, metrics.bytes_recv as i64);
-}

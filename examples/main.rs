@@ -26,8 +26,8 @@ async fn main() {
                 .message()
                 .execution_payload()
                 .unwrap()
-                .execution_payload
-                .block_number;
+                .execution_payload_ref()
+                .block_number();
 
             println!(
                 "Received block {} (source peer: {:?}",
