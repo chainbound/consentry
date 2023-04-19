@@ -14,7 +14,7 @@ use crate::types::{
     SubnetDiscovery,
 };
 use crate::Eth2Enr;
-use crate::{error, metrics, Enr, NetworkGlobals, PubsubMessage, TopicHash};
+use crate::{error, internal_metrics, Enr, NetworkGlobals, PubsubMessage, TopicHash};
 use crate::{rpc::*, EnrExt};
 use api_types::{PeerRequestId, Request, RequestId, Response};
 use futures::stream::StreamExt;
@@ -30,6 +30,7 @@ use libp2p::identify::{Identify, IdentifyConfig, IdentifyEvent};
 use libp2p::multiaddr::{Multiaddr, Protocol as MProtocol};
 use libp2p::swarm::{ConnectionLimits, Swarm, SwarmBuilder, SwarmEvent};
 use libp2p::PeerId;
+use metrics::{decrement_gauge, increment_gauge};
 use tracing::{debug, error, info, trace, warn};
 
 use std::marker::PhantomData;
@@ -620,16 +621,16 @@ impl<AppReqId: ReqId, TSpec: EthSpec> Network<AppReqId, TSpec> {
                     // add to metrics
                     match topic.kind() {
                         GossipKind::Attestation(subnet_id) => {
-                            if let Some(v) = metrics::get_int_gauge(
-                                &metrics::FAILED_ATTESTATION_PUBLISHES_PER_SUBNET,
+                            if let Some(v) = internal_metrics::get_int_gauge(
+                                &internal_metrics::FAILED_ATTESTATION_PUBLISHES_PER_SUBNET,
                                 &[subnet_id.as_ref()],
                             ) {
                                 v.inc()
                             };
                         }
                         kind => {
-                            if let Some(v) = metrics::get_int_gauge(
-                                &metrics::FAILED_PUBLISHES_PER_MAIN_TOPIC,
+                            if let Some(v) = internal_metrics::get_int_gauge(
+                                &internal_metrics::FAILED_PUBLISHES_PER_MAIN_TOPIC,
                                 &[&format!("{:?}", kind)],
                             ) {
                                 v.inc()
@@ -665,8 +666,8 @@ impl<AppReqId: ReqId, TSpec: EthSpec> Network<AppReqId, TSpec> {
                 .peer_info(propagation_source)
                 .map(|info| info.client().kind.as_ref())
             {
-                metrics::inc_counter_vec(
-                    &metrics::GOSSIP_UNACCEPTED_MESSAGES_PER_CLIENT,
+                internal_metrics::inc_counter_vec(
+                    &internal_metrics::GOSSIP_UNACCEPTED_MESSAGES_PER_CLIENT,
                     &[client, result],
                 )
             }
@@ -963,13 +964,13 @@ impl<AppReqId: ReqId, TSpec: EthSpec> Network<AppReqId, TSpec> {
         // Increment metrics
         match &request {
             Request::Status(_) => {
-                metrics::inc_counter_vec(&metrics::TOTAL_RPC_REQUESTS, &["status"])
+                internal_metrics::inc_counter_vec(&internal_metrics::TOTAL_RPC_REQUESTS, &["status"])
             }
             Request::BlocksByRange { .. } => {
-                metrics::inc_counter_vec(&metrics::TOTAL_RPC_REQUESTS, &["blocks_by_range"])
+                internal_metrics::inc_counter_vec(&internal_metrics::TOTAL_RPC_REQUESTS, &["blocks_by_range"])
             }
             Request::BlocksByRoot { .. } => {
-                metrics::inc_counter_vec(&metrics::TOTAL_RPC_REQUESTS, &["blocks_by_root"])
+                internal_metrics::inc_counter_vec(&internal_metrics::TOTAL_RPC_REQUESTS, &["blocks_by_root"])
             }
         }
         NetworkEvent::RequestReceived {
@@ -1061,8 +1062,8 @@ impl<AppReqId: ReqId, TSpec: EthSpec> Network<AppReqId, TSpec> {
                             {
                                 Ok(_) => {
                                     warn!(topic = topic_str, "Gossip message published on retry");
-                                    if let Some(v) = metrics::get_int_counter(
-                                        &metrics::GOSSIP_LATE_PUBLISH_PER_TOPIC_KIND,
+                                    if let Some(v) = internal_metrics::get_int_counter(
+                                        &internal_metrics::GOSSIP_LATE_PUBLISH_PER_TOPIC_KIND,
                                         &[topic_str],
                                     ) {
                                         v.inc()
@@ -1070,8 +1071,8 @@ impl<AppReqId: ReqId, TSpec: EthSpec> Network<AppReqId, TSpec> {
                                 }
                                 Err(e) => {
                                     warn!(error = %e, topic = topic_str, "Gossip message publish failed on retry");
-                                    if let Some(v) = metrics::get_int_counter(
-                                        &metrics::GOSSIP_FAILED_LATE_PUBLISH_PER_TOPIC_KIND,
+                                    if let Some(v) = internal_metrics::get_int_counter(
+                                        &internal_metrics::GOSSIP_FAILED_LATE_PUBLISH_PER_TOPIC_KIND,
                                         &[topic_str],
                                     ) {
                                         v.inc()
@@ -1313,12 +1314,15 @@ impl<AppReqId: ReqId, TSpec: EthSpec> Network<AppReqId, TSpec> {
     ) -> Option<NetworkEvent<AppReqId, TSpec>> {
         match event {
             PeerManagerEvent::PeerConnectedIncoming(peer_id) => {
+                increment_gauge!("libp2p_peer_count", 1.0);
                 Some(NetworkEvent::PeerConnectedIncoming(peer_id))
             }
             PeerManagerEvent::PeerConnectedOutgoing(peer_id) => {
+                increment_gauge!("libp2p_peer_count", 1.0);
                 Some(NetworkEvent::PeerConnectedOutgoing(peer_id))
             }
             PeerManagerEvent::PeerDisconnected(peer_id) => {
+                decrement_gauge!("libp2p_peer_count", 1.0);
                 Some(NetworkEvent::PeerDisconnected(peer_id))
             }
             PeerManagerEvent::Banned(peer_id, associated_ips) => {
@@ -1454,8 +1458,8 @@ impl<AppReqId: ReqId, TSpec: EthSpec> Network<AppReqId, TSpec> {
             match result {
                 Err(e) => warn!(error = e, "Gossip cache error"),
                 Ok(expired_topic) => {
-                    if let Some(v) = metrics::get_int_counter(
-                        &metrics::GOSSIP_EXPIRED_LATE_PUBLISH_PER_TOPIC_KIND,
+                    if let Some(v) = internal_metrics::get_int_counter(
+                        &internal_metrics::GOSSIP_EXPIRED_LATE_PUBLISH_PER_TOPIC_KIND,
                         &[expired_topic.kind().as_ref()],
                     ) {
                         v.inc()

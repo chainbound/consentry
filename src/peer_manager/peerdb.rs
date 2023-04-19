@@ -1,5 +1,5 @@
 use crate::{
-    metrics,
+    internal_metrics,
     multiaddr::{Multiaddr, Protocol},
     types::Subnet,
     Enr, Gossipsub, PeerId,
@@ -518,14 +518,14 @@ impl<TSpec: EthSpec> PeerDB<TSpec> {
         source: ReportSource,
         msg: &'static str,
     ) -> ScoreUpdateResult {
-        metrics::inc_counter_vec(&metrics::REPORT_PEER_MSGS, &[msg]);
+        internal_metrics::inc_counter_vec(&internal_metrics::REPORT_PEER_MSGS, &[msg]);
 
         match self.peers.get_mut(peer_id) {
             Some(info) => {
                 let previous_state = info.score_state();
                 info.apply_peer_action_to_score(action);
-                metrics::inc_counter_vec(
-                    &metrics::PEER_ACTION_EVENTS_PER_CLIENT,
+                internal_metrics::inc_counter_vec(
+                    &internal_metrics::PEER_ACTION_EVENTS_PER_CLIENT,
                     &[info.client().kind.as_ref(), action.as_ref(), source.into()],
                 );
                 let result = Self::handle_score_transition(previous_state, peer_id, info);

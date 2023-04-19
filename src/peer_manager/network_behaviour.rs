@@ -12,7 +12,7 @@ use libp2p::{Multiaddr, PeerId};
 use tracing::{debug, error};
 use types::EthSpec;
 
-use crate::metrics;
+use crate::internal_metrics;
 use crate::rpc::GoodbyeReason;
 use crate::types::SyncState;
 
@@ -131,7 +131,7 @@ impl<TSpec: EthSpec> NetworkBehaviour for PeerManager<TSpec> {
 
         // Check NAT if metrics are enabled
         if self.network_globals.local_enr.read().udp4().is_some() {
-            metrics::check_nat();
+            internal_metrics::check_nat();
         }
 
         // Check to make sure the peer is not supposed to be banned

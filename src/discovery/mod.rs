@@ -7,7 +7,7 @@ pub(crate) mod enr;
 pub mod enr_ext;
 
 // Allow external use of the lighthouse ENR builder
-use crate::metrics;
+use crate::internal_metrics;
 use crate::network::TARGET_SUBNET_PEERS;
 use crate::{error, Enr, NetworkConfig, NetworkGlobals, Subnet, SubnetDiscovery};
 use discv5::{enr::NodeId, Discv5, Discv5Event};
@@ -604,7 +604,7 @@ impl<TSpec: EthSpec> Discovery<TSpec> {
                 min_ttl,
                 retries,
             });
-            metrics::set_gauge(&metrics::DISCOVERY_QUEUE, self.queued_queries.len() as i64);
+            internal_metrics::set_gauge(&internal_metrics::DISCOVERY_QUEUE, self.queued_queries.len() as i64);
         }
     }
 
@@ -639,7 +639,7 @@ impl<TSpec: EthSpec> Discovery<TSpec> {
             }
         }
         // Update the queue metric
-        metrics::set_gauge(&metrics::DISCOVERY_QUEUE, self.queued_queries.len() as i64);
+        internal_metrics::set_gauge(&internal_metrics::DISCOVERY_QUEUE, self.queued_queries.len() as i64);
         processed
     }
 
@@ -827,8 +827,8 @@ impl<TSpec: EthSpec> Discovery<TSpec> {
                                 Subnet::SyncCommittee(_) => "sync_committee",
                             };
 
-                            if let Some(v) = metrics::get_int_counter(
-                                &metrics::TOTAL_SUBNET_QUERIES,
+                            if let Some(v) = internal_metrics::get_int_counter(
+                                &internal_metrics::TOTAL_SUBNET_QUERIES,
                                 &[query_str],
                             ) {
                                 v.inc();
@@ -843,8 +843,8 @@ impl<TSpec: EthSpec> Discovery<TSpec> {
                                 .filter(|enr| subnet_predicate(enr))
                                 .map(|enr| enr.peer_id())
                                 .for_each(|peer_id| {
-                                    if let Some(v) = metrics::get_int_counter(
-                                        &metrics::SUBNET_PEERS_FOUND,
+                                    if let Some(v) = internal_metrics::get_int_counter(
+                                        &internal_metrics::SUBNET_PEERS_FOUND,
                                         &[query_str],
                                     ) {
                                         v.inc();
@@ -1025,8 +1025,8 @@ impl<TSpec: EthSpec> NetworkBehaviour for Discovery<TSpec> {
                         }
                         Discv5Event::SocketUpdated(socket_addr) => {
                             info!(ip = %socket_addr.ip(), udp_port = %socket_addr.port(), "Address updated");
-                            metrics::inc_counter(&metrics::ADDRESS_UPDATE_COUNT);
-                            metrics::check_nat();
+                            internal_metrics::inc_counter(&internal_metrics::ADDRESS_UPDATE_COUNT);
+                            internal_metrics::check_nat();
                             // Discv5 will have updated our local ENR. We save the updated version
                             // to disk.
                             let enr = self.discv5.local_enr();
