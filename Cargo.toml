@@ -45,6 +45,7 @@ unused_port = { git = "https://github.com/sigp/lighthouse", tag = "v4.0.1" }
 delay_map = "0.1.1"
 tracing = { version = "0.1" }
 tracing-subscriber = { version = "0.2", features = ["fmt", "env-filter"] }
+metrics = "0.20"
 
 [dependencies.libp2p]
 version = "0.48.0"

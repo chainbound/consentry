@@ -187,8 +187,8 @@ impl<TSpec: EthSpec> NetworkBehaviour for PeerManager<TSpec> {
 
         // increment prometheus metrics
         self.update_connected_peer_metrics();
-        metrics::inc_counter(&metrics::PEER_CONNECT_EVENT_COUNT);
     }
+
     fn inject_connection_closed(
         &mut self,
         peer_id: &PeerId,
