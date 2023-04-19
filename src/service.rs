@@ -34,6 +34,7 @@ pub struct ServiceConfig {
     pub libp2p_port: u16,
     pub discovery_port: u16,
     pub max_peers: usize,
+    pub metrics_enabled: bool,
 }
 
 impl Default for ServiceConfig {
@@ -43,6 +44,7 @@ impl Default for ServiceConfig {
             libp2p_port: 9000,
             discovery_port: 9000,
             max_peers: 50,
+            metrics_enabled: true,
         }
     }
 }
@@ -109,6 +111,7 @@ impl Service {
             discovery_port: self.cfg.discovery_port,
             boot_nodes_enr: self.cfg.boot_enrs,
             target_peers: self.cfg.max_peers,
+            metrics_enabled: self.cfg.metrics_enabled,
             network_load: 5,
             ..Default::default()
         };
