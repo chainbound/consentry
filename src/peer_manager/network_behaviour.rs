@@ -184,9 +184,6 @@ impl<TSpec: EthSpec> NetworkBehaviour for PeerManager<TSpec> {
                     .push(PeerManagerEvent::PeerConnectedOutgoing(*peer_id));
             }
         }
-
-        // increment prometheus metrics
-        self.update_connected_peer_metrics();
     }
 
     fn inject_connection_closed(
@@ -221,10 +218,6 @@ impl<TSpec: EthSpec> NetworkBehaviour for PeerManager<TSpec> {
         // here and the peer manager has no knowledge of its connection. We insert it here for
         // reference so that peer manager can track this peer.
         self.inject_disconnect(peer_id);
-
-        // Update the prometheus metrics
-        self.update_connected_peer_metrics();
-        metrics::inc_counter(&metrics::PEER_DISCONNECT_EVENT_COUNT);
     }
 
     fn inject_address_change(

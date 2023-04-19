@@ -712,11 +712,13 @@ impl<TSpec: EthSpec> PeerManager<TSpec> {
                 }
                 ConnectingType::IngoingConnected { multiaddr } => {
                     peerdb.connect_ingoing(peer_id, multiaddr, enr);
+                    metrics::increment_gauge!("libp2p_peer_count", 1.0, "direction" => "inbound");
                     // start a timer to ping inbound peers.
                     self.inbound_ping_peers.insert(*peer_id);
                 }
                 ConnectingType::OutgoingConnected { multiaddr } => {
                     peerdb.connect_outgoing(peer_id, multiaddr, enr);
+                    metrics::increment_gauge!("libp2p_peer_count", 1.0, "direction" => "outbound");
                     // start a timer for to ping outbound peers.
                     self.outbound_ping_peers.insert(*peer_id);
                 }
