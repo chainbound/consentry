@@ -171,6 +171,7 @@ impl Service {
 
         let mut epoch_blocks: VecDeque<(Slot, Hash256)> = VecDeque::with_capacity(3);
         let mut epoch_up_to_date = false;
+        let mut last_epoch = Epoch::new(0);
 
         loop {
             tokio::select! {
@@ -209,8 +210,9 @@ impl Service {
 
                                 debug!(slot = ?slot, root = ?root, "Received block");
 
-                                // Epoch block
-                                if slot % 32 == 0 {
+                                // Epoch if and only if it was a bigger epoch than the last one
+                                if slot % 32 == 0 && Epoch::from(slot.as_u64() / 32) > last_epoch {
+                                    last_epoch = Epoch::from(slot.as_u64() / 32);
                                     epoch_blocks.push_back((slot, root));
                                     if epoch_blocks.len() > 2 {
                                         let (finalized_slot, finalized_root) = epoch_blocks.pop_front().unwrap();
@@ -222,7 +224,7 @@ impl Service {
                                     }
                                 }
 
-                                if epoch_up_to_date {
+                                if epoch_up_to_date && slot > highest_status.head_slot {
                                     highest_status.head_root = root;
                                     highest_status.head_slot = slot;
                                     debug!(?highest_status, "Updated highest status");
