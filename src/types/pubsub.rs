@@ -18,7 +18,7 @@ pub use types::{
 #[derive(Debug, Clone, PartialEq)]
 pub enum PubsubMessage<T: EthSpec> {
     /// Gossipsub message providing notification of a new block.
-    BeaconBlock(Arc<SignedBeaconBlock<T>>),
+    BeaconBlock(Box<SignedBeaconBlock<T>>),
     /// Gossipsub message providing notification of a Aggregate attestation and associated proof.
     AggregateAndProofAttestation(Box<SignedAggregateAndProof<T>>),
     /// Gossipsub message providing notification of a raw un-aggregated attestation with its shard id.
@@ -178,7 +178,7 @@ impl<T: EthSpec> PubsubMessage<T> {
                                     ))
                                 }
                             };
-                        Ok(PubsubMessage::BeaconBlock(Arc::new(beacon_block)))
+                        Ok(PubsubMessage::BeaconBlock(Box::new(beacon_block)))
                     }
                     GossipKind::VoluntaryExit => {
                         let voluntary_exit = SignedVoluntaryExit::from_ssz_bytes(data)
