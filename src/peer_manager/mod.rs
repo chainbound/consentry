@@ -83,6 +83,7 @@ pub struct PeerManager<TSpec: EthSpec> {
     /// Keeps track of whether the discovery service is enabled or not.
     discovery_enabled: bool,
     /// Keeps track if the current instance is reporting metrics or not.
+    #[allow(unused)]
     metrics_enabled: bool,
 }
 
@@ -1081,6 +1082,9 @@ impl<TSpec: EthSpec> PeerManager<TSpec> {
         // Prune any excess peers back to our target in such a way that incentivises good scores and
         // a uniform distribution of subnets.
         self.prune_excess_peers();
+
+        // Update peer count metrics.
+        self.update_connected_peer_metrics();
     }
 
     // Update metrics related to peer scoring.
