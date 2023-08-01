@@ -356,6 +356,10 @@ impl<T: EthSpec> PeerInfo<T> {
         self.is_trusted = true;
     }
 
+    pub(in crate::peer_manager) fn set_untrusted(&mut self) {
+        self.is_trusted = false;
+    }
+
     /// Sets the time that the peer is expected to be needed until for an attached validator duty.
     pub(super) fn set_min_ttl(&mut self, min_ttl: Instant) {
         self.min_ttl = Some(min_ttl)

@@ -380,6 +380,12 @@ impl<TSpec: EthSpec> PeerManager<TSpec> {
         self.network_globals.peers.read().is_connected(peer_id)
     }
 
+    pub fn remove_trusted(&self, peer_id: &PeerId) {
+        if let Some(info) = self.network_globals.peers.write().peer_info_mut(peer_id) {
+            info.set_untrusted();
+        }
+    }
+
     /// Reports whether the peer limit is reached in which case we stop allowing new incoming
     /// connections.
     pub fn peer_limit_reached(&self, count_dialing: bool) -> bool {

@@ -58,7 +58,8 @@ pub enum SentryCommand {
     Subscribe(GossipKind),
     Publish(PubsubMessage<MainnetEthSpec>),
     PeerCount(oneshot::Sender<usize>),
-    DialTrusted(PeerId, Enr),
+    AddTrusted(PeerId, Enr),
+    RemoveTrusted(PeerId),
 }
 
 #[derive(Clone, Debug)]
@@ -77,10 +78,17 @@ impl SentryHandle {
         rx.await.unwrap_or(0)
     }
 
-    /// Starts dialing a trusted peer. This peer will be exempt from any peer
+    /// Adds a trusted peer. If the peer is not connected yet
+    /// this will trigger a dial. This peer will be exempt from any peer
     /// scoring and will be dialed immediately.
-    pub fn dial_trusted_peer(&self, peer_id: PeerId, enr: Enr) {
-        let _ = self.cmd_tx.send(SentryCommand::DialTrusted(peer_id, enr));
+    pub fn add_trusted_peer(&self, peer_id: PeerId, enr: Enr) {
+        let _ = self.cmd_tx.send(SentryCommand::AddTrusted(peer_id, enr));
+    }
+
+    /// Removes a trusted peer. It does not disconnect the peer but removes
+    /// it from the explicit peer set. It also untags it as a trusted peer.
+    pub fn remove_trusted_peer(&self, peer_id: PeerId) {
+        let _ = self.cmd_tx.send(SentryCommand::RemoveTrusted(peer_id));
     }
 
     /// Publish a pubsub message.
@@ -208,13 +216,22 @@ impl Sentry {
                             SentryCommand::PeerCount(tx) => {
                                 let _ = tx.send(globals.connected_peers());
                             }
-                            SentryCommand::DialTrusted(peer_id, enr) => {
+                            SentryCommand::AddTrusted(peer_id, enr) => {
                                 // Add the peer as an explicit peer. This will make sure they will always
                                 // receive our pubsub messages immediately.
                                 info!(%peer_id, ip = ?enr.ip4(), "Dialing trusted peer");
                                 network.add_enr(enr.clone());
-                                network.peer_manager_mut().dial_trusted_peer(&peer_id, Some(enr));
-                                trusted_peers.insert(peer_id);
+                                if !network.peer_manager().is_connected(&peer_id) {
+                                    network.peer_manager_mut().dial_trusted_peer(&peer_id, Some(enr));
+                                    trusted_peers.insert(peer_id);
+                                }
+                            }
+                            SentryCommand::RemoveTrusted(peer_id) => {
+                                // Removes the peer from our trusted peer set
+                                if trusted_peers.remove(&peer_id) {
+                                    network.gossipsub_mut().remove_explicit_peer(&peer_id);
+                                    network.peer_manager_mut().remove_trusted(&peer_id);
+                                }
                             }
                         }
                     }
@@ -380,7 +397,7 @@ mod tests {
 
         tokio::time::sleep(Duration::from_millis(100)).await;
 
-        handle.dial_trusted_peer(peer_id, enr);
+        handle.add_trusted_peer(peer_id, enr);
         events.next().await.unwrap();
     }
 }
