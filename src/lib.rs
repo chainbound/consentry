@@ -61,18 +61,18 @@ impl<'de> Deserialize<'de> for PeerIdSerialized {
     }
 }
 
-use crate::types::{error, Enr, EnrSyncCommitteeBitfield, NetworkGlobals, Subnet, SubnetDiscovery};
+use crate::types::{error, EnrSyncCommitteeBitfield, NetworkGlobals, Subnet, SubnetDiscovery};
 use config::Config as NetworkConfig;
 use discovery::{CombinedKeyExt, EnrExt, Eth2Enr};
 use libp2p::gossipsub::TopicHash;
-use libp2p::PeerId;
+pub use libp2p::PeerId;
 use libp2p::{multiaddr, Multiaddr};
 use network::api_types::{Request, Response};
 use network::utils::*;
 use network::{Gossipsub, Network, NetworkEvent};
 use peer_manager::peerdb::client::Client;
 
-pub use crate::types::{GossipKind, GossipTopic, PubsubMessage};
+pub use crate::types::{Enr, GossipKind, GossipTopic, PubsubMessage};
 pub use consensus_types::{
     BeaconBlock, BitVector, EthSpec, ExecutionPayload, FullPayload, MainnetEthSpec,
     SignedBeaconBlock,
