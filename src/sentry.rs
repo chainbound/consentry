@@ -56,7 +56,9 @@ impl Default for SentryConfig {
 #[derive(Debug)]
 pub enum SentryCommand {
     Subscribe(GossipKind),
+    Publish(PubsubMessage<MainnetEthSpec>),
     PeerCount(oneshot::Sender<usize>),
+    AddTrustedPeer(PeerId),
 }
 
 #[derive(Clone, Debug)]
@@ -186,8 +188,15 @@ impl Sentry {
                                 debug!(?kind, "New topic subscription");
                                 network.subscribe_kind(kind);
                             }
+                            SentryCommand::Publish(data) => {
+                                debug!(kind = ?data.kind(), "Publishing message");
+                                network.publish(vec![data]);
+                            }
                             SentryCommand::PeerCount(tx) => {
                                 let _ = tx.send(globals.connected_peers());
+                            }
+                            SentryCommand::AddTrustedPeer(peer) => {
+                                // Add trusted peer to the peer DB
                             }
                         }
                     }

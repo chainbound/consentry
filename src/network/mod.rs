@@ -963,15 +963,18 @@ impl<AppReqId: ReqId, TSpec: EthSpec> Network<AppReqId, TSpec> {
     ) -> NetworkEvent<AppReqId, TSpec> {
         // Increment metrics
         match &request {
-            Request::Status(_) => {
-                internal_metrics::inc_counter_vec(&internal_metrics::TOTAL_RPC_REQUESTS, &["status"])
-            }
-            Request::BlocksByRange { .. } => {
-                internal_metrics::inc_counter_vec(&internal_metrics::TOTAL_RPC_REQUESTS, &["blocks_by_range"])
-            }
-            Request::BlocksByRoot { .. } => {
-                internal_metrics::inc_counter_vec(&internal_metrics::TOTAL_RPC_REQUESTS, &["blocks_by_root"])
-            }
+            Request::Status(_) => internal_metrics::inc_counter_vec(
+                &internal_metrics::TOTAL_RPC_REQUESTS,
+                &["status"],
+            ),
+            Request::BlocksByRange { .. } => internal_metrics::inc_counter_vec(
+                &internal_metrics::TOTAL_RPC_REQUESTS,
+                &["blocks_by_range"],
+            ),
+            Request::BlocksByRoot { .. } => internal_metrics::inc_counter_vec(
+                &internal_metrics::TOTAL_RPC_REQUESTS,
+                &["blocks_by_root"],
+            ),
         }
         NetworkEvent::RequestReceived {
             peer_id,
