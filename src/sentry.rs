@@ -410,4 +410,41 @@ mod tests {
         handle.add_trusted_peer(peer_id, enr);
         events.next().await.unwrap();
     }
+
+    #[tokio::test]
+    async fn static_node_id() {
+        init_tracing();
+
+        let sentry = Sentry::new(SentryConfig {
+            boot_enrs: bootnode_enrs(),
+            libp2p_port: 9000,
+            discovery_port: 9000,
+            max_peers: 1,
+            metrics_enabled: false,
+            network_load: 6,
+        });
+
+        let sentry2 = Sentry::new(SentryConfig {
+            boot_enrs: bootnode_enrs(),
+            libp2p_port: 9001,
+            discovery_port: 9001,
+            max_peers: 1,
+            metrics_enabled: false,
+            network_load: 6,
+        });
+
+        let handle1 = sentry.handle();
+        let handle2 = sentry.handle();
+
+        tokio::spawn(sentry.start());
+        tokio::spawn(sentry2.start());
+
+        tokio::time::sleep(Duration::from_secs(1)).await;
+
+        let enr1 = handle1.local_enr().await;
+        let enr2 = handle2.local_enr().await;
+
+        println!("{:?} {:?}", enr1, enr2);
+        assert_eq!(enr1.node_id(), enr2.node_id());
+    }
 }
