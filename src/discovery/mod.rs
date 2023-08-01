@@ -395,6 +395,7 @@ impl<TSpec: EthSpec> Discovery<TSpec> {
     /// This is with caution. Discovery should automatically maintain this. This should only be
     /// used when automatic discovery is disabled.
     pub fn update_enr_udp_socket(&mut self, socket_addr: SocketAddr) -> Result<(), String> {
+        info!(?socket_addr, "Updating ENR");
         match socket_addr {
             SocketAddr::V4(socket) => {
                 self.discv5
