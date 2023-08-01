@@ -267,7 +267,7 @@ impl From<u8> for NetworkLoad {
                 heartbeat_interval: Duration::from_millis(700),
             },
             // 5 and above
-            _ => NetworkLoad {
+            5 => NetworkLoad {
                 name: "High",
                 mesh_n_low: 5,
                 outbound_min: 3,
@@ -276,6 +276,17 @@ impl From<u8> for NetworkLoad {
                 gossip_lazy: 5,
                 history_gossip: 6,
                 heartbeat_interval: Duration::from_millis(500),
+            },
+            // 6 and above
+            _ => NetworkLoad {
+                name: "LowLatency",
+                mesh_n_low: 5,
+                outbound_min: 3,
+                mesh_n: 12,
+                mesh_n_high: 18,
+                gossip_lazy: 5,
+                history_gossip: 3,
+                heartbeat_interval: Duration::from_millis(200),
             },
         }
     }
