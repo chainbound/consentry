@@ -77,4 +77,4 @@ pub use consensus_types::{
     BeaconBlock, BitVector, EthSpec, ExecutionPayload, FullPayload, MainnetEthSpec,
     SignedBeaconBlock,
 };
-pub use sentry::{Sentry, SentryConfig, SentryHandle};
+pub use sentry::{LocalNetworkInfo, Sentry, SentryConfig, SentryHandle};
