@@ -14,7 +14,7 @@ mod discovery;
 mod internal_metrics;
 mod peer_manager;
 mod rpc;
-mod service;
+mod sentry;
 mod types;
 
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
@@ -77,4 +77,4 @@ pub use consensus_types::{
     BeaconBlock, BitVector, EthSpec, ExecutionPayload, FullPayload, MainnetEthSpec,
     SignedBeaconBlock,
 };
-pub use service::{Service, ServiceConfig, ServiceHandle};
+pub use sentry::{Sentry, SentryConfig, SentryHandle};

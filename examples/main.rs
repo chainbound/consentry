@@ -1,4 +1,4 @@
-use consentry::{GossipKind, PubsubMessage, Service, ServiceConfig};
+use consentry::{GossipKind, PubsubMessage, Sentry, SentryConfig};
 use futures::StreamExt;
 use tracing::info;
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
@@ -11,7 +11,7 @@ async fn main() {
 
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
-    let mut svc = Service::new(ServiceConfig::default());
+    let mut svc = Sentry::new(SentryConfig::default());
 
     let handle = svc.handle();
 
