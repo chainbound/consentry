@@ -58,6 +58,7 @@ pub enum SentryCommand {
     Subscribe(GossipKind),
     Publish(PubsubMessage<MainnetEthSpec>),
     PeerCount(oneshot::Sender<usize>),
+    LocalEnr(oneshot::Sender<Enr>),
     AddTrusted(PeerId, Enr),
     RemoveTrusted(PeerId),
 }
@@ -76,6 +77,12 @@ impl SentryHandle {
         let (tx, rx) = oneshot::channel();
         let _ = self.cmd_tx.send(SentryCommand::PeerCount(tx));
         rx.await.unwrap_or(0)
+    }
+
+    pub async fn local_enr(&self) -> Enr {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.cmd_tx.send(SentryCommand::LocalEnr(tx));
+        rx.await.unwrap()
     }
 
     /// Adds a trusted peer. If the peer is not connected yet
@@ -215,6 +222,9 @@ impl Sentry {
                             }
                             SentryCommand::PeerCount(tx) => {
                                 let _ = tx.send(globals.connected_peers());
+                            }
+                            SentryCommand::LocalEnr(tx) => {
+                                let _ = tx.send(network.local_enr());
                             }
                             SentryCommand::AddTrusted(peer_id, enr) => {
                                 // Add the peer as an explicit peer. This will make sure they will always
