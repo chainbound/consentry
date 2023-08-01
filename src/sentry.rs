@@ -53,12 +53,18 @@ impl Default for SentryConfig {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct LocalNetworkInfo {
+    enr: Enr,
+    peer_id: PeerId,
+}
+
 #[derive(Debug)]
 pub enum SentryCommand {
     Subscribe(GossipKind),
     Publish(PubsubMessage<MainnetEthSpec>),
     PeerCount(oneshot::Sender<usize>),
-    LocalEnr(oneshot::Sender<Enr>),
+    LocalNetworkInfo(oneshot::Sender<LocalNetworkInfo>),
     AddTrusted(PeerId, Enr),
     RemoveTrusted(PeerId),
 }
@@ -79,9 +85,9 @@ impl SentryHandle {
         rx.await.unwrap_or(0)
     }
 
-    pub async fn local_enr(&self) -> Enr {
+    pub async fn local_network_info(&self) -> LocalNetworkInfo {
         let (tx, rx) = oneshot::channel();
-        let _ = self.cmd_tx.send(SentryCommand::LocalEnr(tx));
+        let _ = self.cmd_tx.send(SentryCommand::LocalNetworkInfo(tx));
         rx.await.unwrap()
     }
 
@@ -223,8 +229,11 @@ impl Sentry {
                             SentryCommand::PeerCount(tx) => {
                                 let _ = tx.send(globals.connected_peers());
                             }
-                            SentryCommand::LocalEnr(tx) => {
-                                let _ = tx.send(network.local_enr());
+                            SentryCommand::LocalNetworkInfo(tx) => {
+                                let _ = tx.send(LocalNetworkInfo {
+                                    enr: network.local_enr(),
+                                    peer_id: network.local_peer_id
+                                });
                             }
                             SentryCommand::AddTrusted(peer_id, enr) => {
                                 // Add the peer as an explicit peer. This will make sure they will always
@@ -441,10 +450,10 @@ mod tests {
 
         tokio::time::sleep(Duration::from_secs(1)).await;
 
-        let enr1 = handle1.local_enr().await;
-        let enr2 = handle2.local_enr().await;
+        let info1 = handle1.local_network_info().await;
+        let info2 = handle2.local_network_info().await;
 
-        println!("{:?} {:?}", enr1, enr2);
-        assert_eq!(enr1.node_id(), enr2.node_id());
+        println!("{:?} {:?}", info1.enr, info2.enr);
+        assert_eq!(info1.peer_id, info2.peer_id);
     }
 }
