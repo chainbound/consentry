@@ -280,13 +280,13 @@ impl From<u8> for NetworkLoad {
             // 6 and above
             _ => NetworkLoad {
                 name: "LowLatency",
-                mesh_n_low: 5,
+                mesh_n_low: 6,
                 outbound_min: 3,
                 mesh_n: 12,
                 mesh_n_high: 18,
                 gossip_lazy: 5,
                 history_gossip: 3,
-                heartbeat_interval: Duration::from_millis(200),
+                heartbeat_interval: Duration::from_millis(500),
             },
         }
     }
