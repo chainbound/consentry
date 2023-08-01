@@ -352,6 +352,10 @@ impl<T: EthSpec> PeerInfo<T> {
         self.enr = Some(enr)
     }
 
+    pub(super) fn set_trusted(&mut self) {
+        self.is_trusted = true;
+    }
+
     /// Sets the time that the peer is expected to be needed until for an attached validator duty.
     pub(super) fn set_min_ttl(&mut self, min_ttl: Instant) {
         self.min_ttl = Some(min_ttl)

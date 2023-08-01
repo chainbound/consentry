@@ -604,7 +604,10 @@ impl<TSpec: EthSpec> Discovery<TSpec> {
                 min_ttl,
                 retries,
             });
-            internal_metrics::set_gauge(&internal_metrics::DISCOVERY_QUEUE, self.queued_queries.len() as i64);
+            internal_metrics::set_gauge(
+                &internal_metrics::DISCOVERY_QUEUE,
+                self.queued_queries.len() as i64,
+            );
         }
     }
 
@@ -639,7 +642,10 @@ impl<TSpec: EthSpec> Discovery<TSpec> {
             }
         }
         // Update the queue metric
-        internal_metrics::set_gauge(&internal_metrics::DISCOVERY_QUEUE, self.queued_queries.len() as i64);
+        internal_metrics::set_gauge(
+            &internal_metrics::DISCOVERY_QUEUE,
+            self.queued_queries.len() as i64,
+        );
         processed
     }
 
@@ -958,7 +964,7 @@ impl<TSpec: EthSpec> NetworkBehaviour for Discovery<TSpec> {
                 | DialError::Transport(_)
                 | DialError::WrongPeerId { .. } => {
                     // set peer as disconnected in discovery DHT
-                    debug!(%peer_id, "Marking peer disconnected in DHT");
+                    debug!(?error, %peer_id, "Marking peer disconnected in DHT");
                     self.disconnect_peer(&peer_id);
                 }
                 DialError::ConnectionLimit(_)

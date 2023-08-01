@@ -72,7 +72,7 @@ pub struct PeerManager<TSpec: EthSpec> {
     /// The target number of peers we would like to connect to.
     target_peers: usize,
     /// Peers queued to be dialed.
-    peers_to_dial: VecDeque<(PeerId, Option<Enr>)>,
+    peers_to_dial: VecDeque<(PeerId, Option<Enr>, bool)>,
     /// A collection of sync committee subnets that we need to stay subscribed to.
     /// Sync committee subnets are longer term (256 epochs). Hence, we need to re-run
     /// discovery queries for subnet peers if we disconnect from existing sync
@@ -361,7 +361,12 @@ impl<TSpec: EthSpec> PeerManager<TSpec> {
 
     // A peer is being dialed.
     pub fn dial_peer(&mut self, peer_id: &PeerId, enr: Option<Enr>) {
-        self.peers_to_dial.push_back((*peer_id, enr));
+        self.peers_to_dial.push_back((*peer_id, enr, false));
+    }
+
+    // A trusted peer is being dialed.
+    pub fn dial_trusted_peer(&mut self, peer_id: &PeerId, enr: Option<Enr>) {
+        self.peers_to_dial.push_back((*peer_id, enr, true));
     }
 
     /// Reports if a peer is banned or not.
@@ -707,8 +712,8 @@ impl<TSpec: EthSpec> PeerManager<TSpec> {
             }
 
             match connection {
-                ConnectingType::Dialing => {
-                    peerdb.dialing_peer(peer_id, enr);
+                ConnectingType::Dialing(trusted) => {
+                    peerdb.dialing_peer(peer_id, enr, trusted);
                     return true;
                 }
                 ConnectingType::IngoingConnected { multiaddr } => {
@@ -1157,7 +1162,8 @@ impl<TSpec: EthSpec> PeerManager<TSpec> {
 
 enum ConnectingType {
     /// We are in the process of dialing this peer.
-    Dialing,
+    /// Boolean for indicating if the peer is trusted.
+    Dialing(bool),
     /// A peer has dialed us.
     IngoingConnected {
         // The multiaddr the peer connected to us on.

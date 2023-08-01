@@ -631,8 +631,8 @@ impl<TSpec: EthSpec> PeerDB<TSpec> {
 
     /// A peer is being dialed.
     // VISIBILITY: Only the peer manager can adjust the connection state
-    pub(super) fn dialing_peer(&mut self, peer_id: &PeerId, enr: Option<Enr>) {
-        self.update_connection_state(peer_id, NewConnectionState::Dialing { enr });
+    pub(super) fn dialing_peer(&mut self, peer_id: &PeerId, enr: Option<Enr>, trusted: bool) {
+        self.update_connection_state(peer_id, NewConnectionState::Dialing { enr, trusted });
     }
 
     /// Sets a peer as connected with an ingoing connection.
@@ -695,6 +695,13 @@ impl<TSpec: EthSpec> PeerDB<TSpec> {
             ) {
                 warn!(?peer_id, ?new_state, "Updating state of unknown peer")
             }
+
+            if let NewConnectionState::Dialing { trusted, .. } = new_state {
+                if trusted {
+                    return PeerInfo::trusted_peer_info();
+                }
+            }
+
             PeerInfo::default()
         });
 
@@ -778,7 +785,7 @@ impl<TSpec: EthSpec> PeerDB<TSpec> {
              *
              * Handles the transition to a dialing state
              */
-            (old_state, NewConnectionState::Dialing { enr }) => {
+            (old_state, NewConnectionState::Dialing { enr, trusted }) => {
                 match old_state {
                     PeerConnectionStatus::Banned { .. } => {
                         warn!(?peer_id, "Dialing a banned peer");
@@ -802,6 +809,10 @@ impl<TSpec: EthSpec> PeerDB<TSpec> {
                 // Update the ENR if one is known.
                 if let Some(enr) = enr {
                     info.set_enr(enr);
+                }
+
+                if trusted {
+                    info.set_trusted();
                 }
 
                 if let Err(e) = info.set_dialing_peer() {
@@ -1116,6 +1127,8 @@ enum NewConnectionState {
     },
     /// We are dialing this peer.
     Dialing {
+        /// Wether the peer is trusted
+        trusted: bool,
         /// An optional known ENR for the peer we are dialing.
         enr: Option<Enr>,
     },
@@ -1378,7 +1391,7 @@ mod tests {
 
         pdb.update_min_ttl(&new_peer, min_ttl);
         // Peer then gets dialed
-        pdb.dialing_peer(&new_peer, None);
+        pdb.dialing_peer(&new_peer, None, false);
         assert_eq!(pdb.disconnected_peers, pdb.disconnected_peers().count());
         // Dialing fails, remove the peer
         pdb.inject_disconnect(&new_peer);

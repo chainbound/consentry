@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 use std::net::SocketAddr;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -58,7 +58,7 @@ pub enum SentryCommand {
     Subscribe(GossipKind),
     Publish(PubsubMessage<MainnetEthSpec>),
     PeerCount(oneshot::Sender<usize>),
-    AddTrustedPeer(PeerId),
+    DialTrusted(PeerId, Enr),
 }
 
 #[derive(Clone, Debug)]
@@ -75,6 +75,17 @@ impl SentryHandle {
         let (tx, rx) = oneshot::channel();
         let _ = self.cmd_tx.send(SentryCommand::PeerCount(tx));
         rx.await.unwrap_or(0)
+    }
+
+    /// Starts dialing a trusted peer. This peer will be exempt from any peer
+    /// scoring and will be dialed immediately.
+    pub fn dial_trusted_peer(&self, peer_id: PeerId, enr: Enr) {
+        let _ = self.cmd_tx.send(SentryCommand::DialTrusted(peer_id, enr));
+    }
+
+    /// Publish a pubsub message.
+    pub fn publish(&self, message: PubsubMessage<MainnetEthSpec>) {
+        let _ = self.cmd_tx.send(SentryCommand::Publish(message));
     }
 }
 
@@ -179,6 +190,8 @@ impl Sentry {
         let mut epoch_up_to_date = false;
         let mut last_epoch = Epoch::new(0);
 
+        let mut trusted_peers = HashSet::new();
+
         loop {
             tokio::select! {
                 cmd = self.cmd_rx.recv() => {
@@ -195,8 +208,13 @@ impl Sentry {
                             SentryCommand::PeerCount(tx) => {
                                 let _ = tx.send(globals.connected_peers());
                             }
-                            SentryCommand::AddTrustedPeer(peer) => {
-                                // Add trusted peer to the peer DB
+                            SentryCommand::DialTrusted(peer_id, enr) => {
+                                // Add the peer as an explicit peer. This will make sure they will always
+                                // receive our pubsub messages immediately.
+                                info!(%peer_id, ip = ?enr.ip4(), "Dialing trusted peer");
+                                network.add_enr(enr.clone());
+                                network.peer_manager_mut().dial_trusted_peer(&peer_id, Some(enr));
+                                trusted_peers.insert(peer_id);
                             }
                         }
                     }
@@ -205,13 +223,21 @@ impl Sentry {
                     match event {
                         NetworkEvent::PeerConnectedIncoming(id) => {
                             debug!(peer = ?id, "Peer connected (incoming)");
+                            if trusted_peers.contains(&id) {
+                                info!(peer = ?id, "Trusted peer connected (incoming)");
+                                network.gossipsub_mut().add_explicit_peer(&id);
+                            }
                         }
                         // NOTE: we have to send status messages when connecting here:
                         // https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#status
                         NetworkEvent::PeerConnectedOutgoing(id) => {
-                            let client_type = globals.client(&id);
-                            debug!(peer = ?id, ?client_type, "Peer connected (outgoing)");
+                            debug!(peer = ?id, "Peer connected (outgoing)");
                             network.send_request(id, 10, Request::Status(highest_status.clone()));
+
+                            if trusted_peers.contains(&id) {
+                                info!(peer = ?id, "Trusted peer connected (outgoing)");
+                                network.gossipsub_mut().add_explicit_peer(&id);
+                            }
                         }
                         NetworkEvent::PeerDisconnected(id) => {
                             debug!(peer = ?id, "Peer disconnected");
@@ -303,4 +329,58 @@ pub fn bootnode_enrs() -> Vec<Enr> {
         Enr::from_str("enr:-Ku4QP2xDnEtUXIjzJ_DhlCRN9SN99RYQPJL92TMlSv7U5C1YnYLjwOQHgZIUXw6c-BvRg2Yc2QsZxxoS_pPRVe0yK8Bh2F0dG5ldHOIAAAAAAAAAACEZXRoMpD1pf1CAAAAAP__________gmlkgnY0gmlwhBLf22SJc2VjcDI1NmsxoQMeFF5GrS7UZpAH2Ly84aLK-TyvH-dRo0JM1i8yygH50YN1ZHCCJxA").unwrap(),
         Enr::from_str("enr:-Ku4QPp9z1W4tAO8Ber_NQierYaOStqhDqQdOPY3bB3jDgkjcbk6YrEnVYIiCBbTxuar3CzS528d2iE7TdJsrL-dEKoBh2F0dG5ldHOIAAAAAAAAAACEZXRoMpD1pf1CAAAAAP__________gmlkgnY0gmlwhBLf22SJc2VjcDI1NmsxoQMw5fqqkw2hHC4F5HZZDPsNmPdB1Gi8JPQK7pRc9XHh-oN1ZHCCKvg").unwrap(),
     ]
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{sync::Once, time::Duration};
+
+    use tokio_stream::StreamExt;
+    use tracing_subscriber::EnvFilter;
+
+    use super::*;
+
+    static INIT: Once = Once::new();
+
+    pub fn init_tracing() {
+        INIT.call_once(|| {
+            let subscriber = tracing_subscriber::fmt()
+                .with_env_filter(EnvFilter::from_default_env())
+                .finish();
+
+            tracing::subscriber::set_global_default(subscriber)
+                .expect("setting default subscriber failed");
+        });
+    }
+
+    #[tokio::test]
+    async fn test_trusted_dial() {
+        init_tracing();
+        let peer_id =
+            PeerId::from_str("16Uiu2HAmFR3ZHBDGPUcFQhBBFotnH6QRg1XEt8eh3zPajD5LK8wv").unwrap();
+        let enr = Enr::from_str("enr:-Ly4QEaX8wHWcs725rWF85D99paqIoVdXx6xq9HZLELvAsX6ZFVrHVbUbcOAg3-tBaVVSx_UTkko_eA7XJecUrF4pNsQh2F0dG5ldHOIAAAAAAAAAMCEZXRoMpC7pNqWAwAAAP__________gmlkgnY0gmlwhEFtarOJc2VjcDI1NmsxoQMpAI4oXOjuj6RmJgxgNH7E-NHOArXcE9Bnhx1tQqdi7YhzeW5jbmV0cwCDdGNwgicPg3VkcIInDw").unwrap();
+        // let peer_id =
+        //     PeerId::from_str("16Uiu2HAmS76cdxj4D44pHy4fhJP6D6QopD5L4vbMVw2Ty3gk8sAd").unwrap();
+        // let enr = Enr::from_str("enr:-L64QCyFmg1w2Tu7MJd0Fzkel-maMuT_hlH0-9HOmecC73IuN5T1AOfiNJy1OpUVqUBph0x-5htj51OHAgB_jA71rhqCBy2HYXR0bmV0c4gIAAAAAAAAQIRldGgykLuk2pYDAAAA__________-CaWSCdjSCaXCEVMSGeolzZWNwMjU2azGhA8fYHVCgtn7wAEvtjimNxPzdN48YQf8hKka_SBQaF0veiHN5bmNuZXRzAIN0Y3CCBACDdWRwggQA").unwrap();
+
+        let mut sentry = Sentry::new(SentryConfig {
+            boot_enrs: bootnode_enrs(),
+            libp2p_port: 9000,
+            discovery_port: 9000,
+            max_peers: 1,
+            metrics_enabled: false,
+            network_load: 6,
+        });
+
+        let handle = sentry.handle();
+        let mut events = sentry.pubsub_event_stream();
+        handle.subscribe_topic(GossipKind::BeaconBlock);
+
+        tokio::spawn(sentry.start());
+
+        tokio::time::sleep(Duration::from_millis(100)).await;
+
+        handle.dial_trusted_peer(peer_id, enr);
+        events.next().await.unwrap();
+    }
 }

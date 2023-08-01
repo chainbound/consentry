@@ -1406,7 +1406,7 @@ impl<AppReqId: ReqId, TSpec: EthSpec> Network<AppReqId, TSpec> {
                     None
                 }
                 SwarmEvent::OutgoingConnectionError { peer_id, error } => {
-                    debug!(?peer_id, %error, "Failed to dial address");
+                    debug!(?peer_id, ?error, "Failed to dial address");
                     None
                 }
                 SwarmEvent::BannedPeer {
